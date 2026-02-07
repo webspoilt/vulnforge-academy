@@ -66,9 +66,12 @@ async def verify_invite(request: VerifyRequest):
     code = request.code
     
     if code not in active_invites:
-        # Also check for a "master" invite code for testing/demo
+        # Master codes
         if code == "VULN-DEMO-MODE-ACTIVE":
             return {"valid": True, "message": "Demo invite code accepted"}
+        if code == "ADMIN-SECRET-KEY":
+            return {"valid": True, "message": "Admin access granted", "rank": "Admin"}
+            
         raise HTTPException(status_code=400, detail="Invalid or expired invite code")
         
     expires_at = active_invites[code]

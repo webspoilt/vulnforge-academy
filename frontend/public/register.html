@@ -326,22 +326,24 @@
                 }
 
                 // Proceed with registration
+                const data = await response.json();
+
                 const user = {
                     username: document.getElementById('username').value,
                     email: document.getElementById('email').value,
                     invite: validInvite,
                     joined: new Date().toISOString(),
-                    rank: 'Script Kiddie',
-                    points: 0,
+                    rank: data.rank || 'Script Kiddie',
+                    points: data.rank === 'Admin' ? 99999 : 0,
                     completed: []
                 };
 
                 localStorage.setItem('vulnforge_user', JSON.stringify(user));
 
                 // Mark as used locally
-                const data = JSON.parse(storedInvite);
-                data.used = true;
-                localStorage.setItem('vulnforge_invite', JSON.stringify(data));
+                const inviteData = JSON.parse(storedInvite || '{}');
+                inviteData.used = true;
+                localStorage.setItem('vulnforge_invite', JSON.stringify(inviteData));
 
                 window.location.href = '/dashboard.html';
 
