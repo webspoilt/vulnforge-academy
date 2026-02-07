@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
+import { ThemeProvider } from "next-themes";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,24 +15,24 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Z.ai Code Scaffold - AI-Powered Development",
-  description: "Modern Next.js scaffold optimized for AI-powered development with Z.ai. Built with TypeScript, Tailwind CSS, and shadcn/ui.",
-  keywords: ["Z.ai", "Next.js", "TypeScript", "Tailwind CSS", "shadcn/ui", "AI development", "React"],
-  authors: [{ name: "Z.ai Team" }],
+  title: "VulnForge Academy - Learn Ethical Hacking",
+  description: "A deliberately vulnerable web application designed for cybersecurity training. Master 20 progressive levels covering OWASP Top 10, SQL Injection, XSS, IDOR, SSRF, RCE & more.",
+  keywords: ["VulnForge", "cybersecurity", "ethical hacking", "CTF", "SQL injection", "XSS", "OWASP", "bug bounty", "penetration testing"],
+  authors: [{ name: "webspoilt" }],
   icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+    icon: "/favicon.ico",
   },
   openGraph: {
-    title: "Z.ai Code Scaffold",
-    description: "AI-powered development with modern React stack",
-    url: "https://chat.z.ai",
-    siteName: "Z.ai",
+    title: "VulnForge Academy",
+    description: "Learn Hacking by Hacking - Ethically. 20 progressive levels from beginner to nightmare.",
+    url: "https://github.com/webspoilt/vulnforge-academy",
+    siteName: "VulnForge Academy",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Z.ai Code Scaffold",
-    description: "AI-powered development with modern React stack",
+    title: "VulnForge Academy",
+    description: "Learn Hacking by Hacking - Ethically. Master OWASP Top 10 vulnerabilities.",
   },
 };
 
@@ -45,8 +46,15 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
-        {children}
-        <Toaster />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );
