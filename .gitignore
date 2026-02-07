@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+.next/
+.cache/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+build/
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
+*.sqlite
+*.db
+
+# PHP
+vendor/
+
+# Misc
+*.bak
+*.tmp

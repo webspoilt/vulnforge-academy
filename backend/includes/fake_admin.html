@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Panel</title>
+    <style>
+        body { background: #1a1a1a; color: #fff; font-family: monospace; padding: 50px; }
+        .fake-login { max-width: 400px; margin: 0 auto; background: #222; padding: 30px; border-radius: 10px; }
+        input { width: 100%; padding: 10px; margin: 10px 0; background: #333; border: 1px solid #444; color: #fff; }
+        button { width: 100%; padding: 10px; background: #c00; border: none; color: #fff; cursor: pointer; }
+        .loading { display: none; text-align: center; padding: 20px; }
+    </style>
+</head>
+<body>
+    <div class="fake-login">
+        <h2>Admin Login</h2>
+        <form id="honeypot-form">
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Login</button>
+        </form>
+        <div class="loading">Authenticating...</div>
+    </div>
+    <script>
+        // Honeypot - logs all attempts and wastes time
+        document.getElementById('honeypot-form').onsubmit = function(e) {
+            e.preventDefault();
+            document.querySelector('.loading').style.display = 'block';
+            document.querySelector('form').style.display = 'none';
+
+            // Log credentials to server
+            var data = new FormData(this);
+            fetch('/logs/honeypot.php', { method: 'POST', body: data });
+
+            // Waste 30 seconds of attacker's time
+            setTimeout(function() {
+                alert('Authentication failed. Your attempt has been logged.');
+                location.reload();
+            }, 30000);
+        };
+    </script>
+</body>
+</html>

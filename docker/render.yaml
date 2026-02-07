@@ -1,0 +1,27 @@
+# Render.com FREE Deployment
+# 1. Fork this repo to your GitHub
+# 2. Connect to Render.com (free account)
+# 3. Create new Web Service from repo
+
+services:
+  - type: web
+    name: vulnforge-academy
+    env: php
+    plan: free
+    buildCommand: ""
+    startCommand: php -S 0.0.0.0:$PORT
+    envVars:
+      - key: DB_HOST
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASS
+        sync: false
+      - key: DB_NAME
+        sync: false
+
+databases:
+  - name: vulnforge-db
+    plan: free
+    databaseName: vulnforge
+    user: vulnforge

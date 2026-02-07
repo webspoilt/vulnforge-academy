@@ -1,0 +1,10 @@
+# robots.txt for VulnForge Academy
+User-agent: *
+Disallow: /admin/
+Disallow: /secret-backup/
+Disallow: /logs/
+Disallow: /includes/
+
+# Hidden directories - DO NOT INDEX!
+Disallow: /secret-backup/flags.txt
+Disallow: /old-admin/

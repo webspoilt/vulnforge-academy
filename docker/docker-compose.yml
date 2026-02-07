@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  app:
+    image: php:8.2-apache
+    ports:
+      - "8000:80"
+    volumes:
+      - .:/var/www/html
+    environment:
+      - DB_HOST=db
+      - DB_USER=vulnforge
+      - DB_PASS=vulnforge123
+      - DB_NAME=vulnforge
+    depends_on:
+      - db
+    command: >
+      bash -c "docker-php-ext-install mysqli &&
+               a2enmod rewrite &&
+               apache2-foreground"
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: vulnforge
+      MYSQL_USER: vulnforge
+      MYSQL_PASSWORD: vulnforge123
+    volumes:
+      - ./db.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - db_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+volumes:
+  db_data:
