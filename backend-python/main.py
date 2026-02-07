@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 
 from database import init_db
-from routers import auth, sqli, xss, idor, ssrf, upload, rce, flags
+from routers import auth, sqli, xss, idor, ssrf, upload, rce, flags, invite
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -53,6 +53,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
+app.include_router(invite.router, prefix="/api/invite", tags=["Invite System"])
 app.include_router(sqli.router, prefix="/api/levels/sqli", tags=["SQL Injection"])
 app.include_router(xss.router, prefix="/api/levels/xss", tags=["XSS"])
 app.include_router(idor.router, prefix="/api/levels/idor", tags=["IDOR"])

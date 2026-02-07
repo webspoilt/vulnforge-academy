@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generate Invite | VulnForge Academy</title>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Inter:wght@400;600;800&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --primary: #00ff41;
@@ -19,7 +22,13 @@
             --text-secondary: #888899;
             --border: #2a2a3a;
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             background: var(--bg-dark);
@@ -28,6 +37,7 @@
             display: flex;
             flex-direction: column;
         }
+
         .top-bar {
             background: var(--bg-card);
             border-bottom: 1px solid var(--border);
@@ -36,6 +46,7 @@
             justify-content: space-between;
             align-items: center;
         }
+
         .logo {
             font-family: 'JetBrains Mono', monospace;
             font-size: 1.2rem;
@@ -46,6 +57,7 @@
             align-items: center;
             gap: 0.5rem;
         }
+
         .top-links a {
             color: var(--text-secondary);
             text-decoration: none;
@@ -53,7 +65,11 @@
             font-size: 0.9rem;
             transition: color 0.3s;
         }
-        .top-links a:hover { color: var(--primary); }
+
+        .top-links a:hover {
+            color: var(--primary);
+        }
+
         .container {
             flex: 1;
             display: flex;
@@ -65,14 +81,16 @@
             margin: 0 auto;
             width: 100%;
         }
+
         .challenge-box {
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: 12px;
             width: 100%;
             overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
         }
+
         .challenge-header {
             background: linear-gradient(135deg, var(--bg-elevated), var(--bg-card));
             padding: 1.5rem 2rem;
@@ -81,6 +99,7 @@
             align-items: center;
             gap: 1rem;
         }
+
         .challenge-icon {
             width: 50px;
             height: 50px;
@@ -91,11 +110,20 @@
             justify-content: center;
             font-size: 1.5rem;
         }
-        .challenge-title h1 { font-size: 1.3rem; margin-bottom: 0.25rem; }
-        .challenge-title span { color: var(--text-secondary); font-size: 0.9rem; }
+
+        .challenge-title h1 {
+            font-size: 1.3rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .challenge-title span {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
         .difficulty-badge {
             margin-left: auto;
-            background: rgba(255,0,85,0.2);
+            background: rgba(255, 0, 85, 0.2);
             color: var(--secondary);
             padding: 0.5rem 1rem;
             border-radius: 20px;
@@ -104,6 +132,7 @@
             text-transform: uppercase;
             border: 1px solid var(--secondary);
         }
+
         .terminal {
             background: #000;
             padding: 2rem;
@@ -112,14 +141,43 @@
             line-height: 1.6;
             min-height: 400px;
         }
-        .terminal-line { margin-bottom: 0.5rem; opacity: 0; animation: fadeIn 0.3s forwards; }
-        @keyframes fadeIn { to { opacity: 1; } }
-        .prompt { color: var(--primary); }
-        .info { color: var(--accent); }
-        .warning { color: var(--warning); }
-        .error { color: var(--secondary); }
-        .success { color: var(--primary); }
-        .muted { color: var(--text-secondary); }
+
+        .terminal-line {
+            margin-bottom: 0.5rem;
+            opacity: 0;
+            animation: fadeIn 0.3s forwards;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+
+        .prompt {
+            color: var(--primary);
+        }
+
+        .info {
+            color: var(--accent);
+        }
+
+        .warning {
+            color: var(--warning);
+        }
+
+        .error {
+            color: var(--secondary);
+        }
+
+        .success {
+            color: var(--primary);
+        }
+
+        .muted {
+            color: var(--text-secondary);
+        }
+
         .cursor {
             display: inline-block;
             width: 8px;
@@ -129,8 +187,27 @@
             vertical-align: middle;
             margin-left: 4px;
         }
-        @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
-        .input-area { display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem; }
+
+        @keyframes blink {
+
+            0%,
+            50% {
+                opacity: 1;
+            }
+
+            51%,
+            100% {
+                opacity: 0;
+            }
+        }
+
+        .input-area {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
         .terminal-input {
             background: transparent;
             border: none;
@@ -141,17 +218,33 @@
             outline: none;
             caret-color: var(--primary);
         }
+
         .success-box {
             display: none;
-            background: linear-gradient(135deg, rgba(0,255,65,0.1), rgba(0,212,255,0.1));
+            background: linear-gradient(135deg, rgba(0, 255, 65, 0.1), rgba(0, 212, 255, 0.1));
             border: 1px solid var(--primary);
             border-radius: 8px;
             padding: 1.5rem;
             margin-top: 1rem;
             animation: slideUp 0.5s;
         }
-        .success-box.show { display: block; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .success-box.show {
+            display: block;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         .invite-code {
             background: var(--bg-dark);
             border: 1px dashed var(--primary);
@@ -164,6 +257,7 @@
             letter-spacing: 2px;
             user-select: all;
         }
+
         .btn {
             display: inline-flex;
             align-items: center;
@@ -177,26 +271,60 @@
             border: none;
             text-decoration: none;
         }
-        .btn-primary { background: var(--primary); color: var(--bg-dark); }
-        .btn-primary:hover { background: var(--primary-dark); box-shadow: 0 0 20px rgba(0, 255, 65, 0.4); }
-        .btn-secondary { background: var(--bg-elevated); color: var(--text-primary); border: 1px solid var(--border); }
-        .btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
-        .actions { display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap; }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--bg-dark);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
         .hint-box {
-            background: rgba(255,204,0,0.1);
+            background: rgba(255, 204, 0, 0.1);
             border-left: 3px solid var(--warning);
             padding: 1rem;
             margin-top: 1rem;
             display: none;
         }
-        .hint-box.show { display: block; animation: fadeIn 0.3s; }
+
+        .hint-box.show {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
         .footer {
             text-align: center;
             padding: 2rem;
             color: var(--text-secondary);
             font-size: 0.9rem;
         }
-        .footer a { color: var(--accent); text-decoration: none; }
+
+        .footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
         .matrix-bg {
             position: fixed;
             top: 0;
@@ -207,13 +335,25 @@
             z-index: -1;
             opacity: 0.03;
         }
+
         @media (max-width: 600px) {
-            .terminal { padding: 1rem; font-size: 0.85rem; }
-            .challenge-header { flex-direction: column; text-align: center; }
-            .difficulty-badge { margin: 1rem 0 0 0; }
+            .terminal {
+                padding: 1rem;
+                font-size: 0.85rem;
+            }
+
+            .challenge-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .difficulty-badge {
+                margin: 1rem 0 0 0;
+            }
         }
     </style>
 </head>
+
 <body>
     <canvas class="matrix-bg" id="matrix"></canvas>
     <div class="top-bar">
@@ -234,30 +374,46 @@
                 <div class="difficulty-badge">Easy</div>
             </div>
             <div class="terminal" id="terminal">
-                <div class="terminal-line" style="animation-delay: 0.1s;"><span class="muted">[</span><span class="warning">!</span><span class="muted">]</span> <span class="warning">RESTRICTED ACCESS DETECTED</span></div>
-                <div class="terminal-line" style="animation-delay: 0.3s;"><span class="muted">[</span><span class="info">*</span><span class="muted">]</span> <span class="info">Initializing secure invite generator...</span></div>
-                <div class="terminal-line" style="animation-delay: 0.5s;"><span class="muted">[</span><span class="info">*</span><span class="muted">]</span> <span class="muted">Loading cryptographic modules... OK</span></div>
-                <div class="terminal-line" style="animation-delay: 0.7s;"><span class="muted">[</span><span class="error">✗</span><span class="muted">]</span> <span class="error">ACCESS DENIED: Manual verification required</span></div>
+                <div class="terminal-line" style="animation-delay: 0.1s;"><span class="muted">[</span><span
+                        class="warning">!</span><span class="muted">]</span> <span class="warning">RESTRICTED ACCESS
+                        DETECTED</span></div>
+                <div class="terminal-line" style="animation-delay: 0.3s;"><span class="muted">[</span><span
+                        class="info">*</span><span class="muted">]</span> <span class="info">Initializing secure invite
+                        generator...</span></div>
+                <div class="terminal-line" style="animation-delay: 0.5s;"><span class="muted">[</span><span
+                        class="info">*</span><span class="muted">]</span> <span class="muted">Loading cryptographic
+                        modules... OK</span></div>
+                <div class="terminal-line" style="animation-delay: 0.7s;"><span class="muted">[</span><span
+                        class="error">✗</span><span class="muted">]</span> <span class="error">ACCESS DENIED: Manual
+                        verification required</span></div>
                 <div class="terminal-line" style="animation-delay: 0.9s;"><span class="muted">---</span></div>
-                <div class="terminal-line" style="animation-delay: 1.1s;"><span class="info">CHALLENGE:</span> <span class="muted">The invite generator uses a simple math-based checksum.</span></div>
-                <div class="terminal-line" style="animation-delay: 1.3s;"><span class="info">TARGET:</span> <span class="muted">api/v1/invite/generate</span></div>
-                <div class="terminal-line" style="animation-delay: 1.5s;"><span class="info">METHOD:</span> <span class="muted">POST with parameter 'checksum'</span></div>
+                <div class="terminal-line" style="animation-delay: 1.1s;"><span class="info">CHALLENGE:</span> <span
+                        class="muted">The invite generator uses a simple math-based checksum.</span></div>
+                <div class="terminal-line" style="animation-delay: 1.3s;"><span class="info">TARGET:</span> <span
+                        class="muted">api/v1/invite/generate</span></div>
+                <div class="terminal-line" style="animation-delay: 1.5s;"><span class="info">METHOD:</span> <span
+                        class="muted">POST with parameter 'checksum'</span></div>
                 <div class="terminal-line" style="animation-delay: 1.7s;"><span class="muted">---</span></div>
-                <div class="terminal-line" style="animation-delay: 1.9s;"><span class="warning">HINT:</span> <span class="muted">The checksum is the sum of ASCII values of "VULNFORGE"</span></div>
-                <div class="terminal-line" style="animation-delay: 2.1s;"><span class="muted">Example: A=65, B=66, so "AB" = 131</span></div>
+                <div class="terminal-line" style="animation-delay: 1.9s;"><span class="warning">HINT:</span> <span
+                        class="muted">The checksum is the sum of ASCII values of "VULNFORGE"</span></div>
+                <div class="terminal-line" style="animation-delay: 2.1s;"><span class="muted">Example: A=65, B=66, so
+                        "AB" = 131</span></div>
                 <div class="terminal-line" style="animation-delay: 2.3s;"><span class="muted">---</span></div>
                 <div id="input-section">
                     <div class="input-area">
                         <span class="prompt">root@vulnforge:~$</span>
-                        <input type="text" class="terminal-input" id="checksum-input" placeholder="Enter checksum value..." autocomplete="off" onkeypress="handleInput(event)">
+                        <input type="text" class="terminal-input" id="checksum-input"
+                            placeholder="Enter checksum value..." autocomplete="off" onkeypress="handleInput(event)">
                         <span class="cursor"></span>
                     </div>
                 </div>
                 <div class="success-box" id="success-box">
-                    <div class="terminal-line success"><span class="success">[✓] ACCESS GRANTED - INVITE GENERATED</span></div>
+                    <div class="terminal-line success"><span class="success">[✓] ACCESS GRANTED - INVITE
+                            GENERATED</span></div>
                     <div class="terminal-line"><span class="muted">Your unique invite code:</span></div>
                     <div class="invite-code" id="invite-code">VULN-XXXX-XXXX-XXXX</div>
-                    <div class="terminal-line muted">This code is valid for 24 hours. Use it to complete your registration.</div>
+                    <div class="terminal-line muted">This code is valid for 24 hours. Use it to complete your
+                        registration.</div>
                     <div class="actions">
                         <a href="/register.html" class="btn btn-primary" id="register-btn">Complete Registration →</a>
                         <button class="btn btn-secondary" onclick="copyCode()">📋 Copy Code</button>
@@ -270,12 +426,14 @@
             </div>
         </div>
         <div style="margin-top: 1.5rem;">
-            <button class="btn btn-secondary" onclick="toggleHint()" style="font-size: 0.85rem;">💡 I'm stuck, give me a hint</button>
+            <button class="btn btn-secondary" onclick="toggleHint()" style="font-size: 0.85rem;">💡 I'm stuck, give me a
+                hint</button>
         </div>
     </div>
     <div class="footer">
         <p>Already have an invite? <a href="/register.html">Register here</a></p>
-        <p style="margin-top: 0.5rem; font-size: 0.8rem;">This is a simulated challenge for educational purposes. <a href="/login.html">Existing members login here</a></p>
+        <p style="margin-top: 0.5rem; font-size: 0.8rem;">This is a simulated challenge for educational purposes. <a
+                href="/login.html">Existing members login here</a></p>
     </div>
     <script>
         // Matrix rain effect
@@ -304,49 +462,62 @@
         window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
 
         const CORRECT_CHECKSUM = 696;
-        function handleInput(e) {
+        async function handleInput(e) {
             if (e.key === 'Enter') {
                 const input = document.getElementById('checksum-input');
                 const value = parseInt(input.value.trim());
-                if (isNaN(value)) { addLine('<span class="error">[✗] Invalid input: numbers only</span>'); return; }
-                if (value === CORRECT_CHECKSUM) { solveChallenge(); }
-                else {
-                    addLine(`<span class="error">[✗] Invalid checksum: ${value}</span>`);
+
+                if (isNaN(value)) {
+                    addLine('<span class="error">[✗] Invalid input: numbers only</span>');
+                    return;
+                }
+
+                addLine('<span class="info">[*] Verifying checksum with server...</span>');
+
+                try {
+                    // Call backend API
+                    const API_BASE = 'https://vulnforge-academy.onrender.com'; // Or localhost for dev
+                    const response = await fetch(`${API_BASE}/api/invite/generate`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ checksum: value })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        solveChallenge(data.code);
+                    } else {
+                        throw new Error('Invalid checksum');
+                    }
+                } catch (err) {
+                    addLine(`<span class="error">[✗] Access Denied: Checksum incorrect</span>`);
                     addLine('<span class="muted">Try again or use the hint button...</span>');
                     input.value = '';
                     input.focus();
                 }
             }
         }
-        function addLine(html) {
-            const terminal = document.getElementById('terminal');
-            const line = document.createElement('div');
-            line.className = 'terminal-line';
-            line.innerHTML = html;
-            line.style.opacity = '0';
-            line.style.animation = 'fadeIn 0.3s forwards';
-            const inputSection = document.getElementById('input-section');
-            terminal.insertBefore(line, inputSection);
-        }
-        function solveChallenge() {
+
+        // ... (omitted)
+
+        function solveChallenge(serverCode) {
             document.getElementById('input-section').style.display = 'none';
-            const code = generateInviteCode();
+            const code = serverCode;
             document.getElementById('invite-code').textContent = code;
             document.getElementById('success-box').classList.add('show');
+
             addLine('<span class="muted">---</span>');
             addLine('<span class="success">[✓] Verification successful!</span>');
             addLine('<span class="info">[*] Generating secure invite token...</span>');
-            localStorage.setItem('vulnforge_invite', JSON.stringify({ code: code, generated: new Date().toISOString(), used: false }));
+
+            localStorage.setItem('vulnforge_invite', JSON.stringify({
+                code: code,
+                generated: new Date().toISOString(),
+                used: false
+            }));
         }
-        function generateInviteCode() {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            let code = 'VULN-';
-            for (let i = 0; i < 3; i++) {
-                for (let j = 0; j < 4; j++) code += chars[Math.floor(Math.random() * chars.length)];
-                if (i < 2) code += '-';
-            }
-            return code;
-        }
+
+        /* Removed client-side generateInviteCode function */
         function toggleHint() { document.getElementById('hint-box').classList.toggle('show'); }
         function copyCode() {
             const code = document.getElementById('invite-code').textContent;
@@ -355,4 +526,5 @@
         window.onload = () => { setTimeout(() => document.getElementById('checksum-input').focus(), 2500); };
     </script>
 </body>
+
 </html>

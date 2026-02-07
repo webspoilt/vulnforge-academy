@@ -308,23 +308,46 @@
             document.getElementById('error-msg').innerHTML = msg;
             alert.classList.add('show');
         }
-        function handleRegister(e) {
+        async function handleRegister(e) {
             e.preventDefault();
             if (!validInvite) { showError('Valid invite code required'); return; }
-            const user = {
-                username: document.getElementById('username').value,
-                email: document.getElementById('email').value,
-                invite: validInvite,
-                joined: new Date().toISOString(),
-                rank: 'Script Kiddie',
-                points: 0,
-                completed: []
-            };
-            localStorage.setItem('vulnforge_user', JSON.stringify(user));
-            const data = JSON.parse(storedInvite);
-            data.used = true;
-            localStorage.setItem('vulnforge_invite', JSON.stringify(data));
-            window.location.href = '/';
+
+            // Verify with backend
+            try {
+                const API_BASE = 'https://vulnforge-academy.onrender.com';
+                const response = await fetch(`${API_BASE}/api/invite/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: validInvite })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Invite code expired or invalid');
+                }
+
+                // Proceed with registration
+                const user = {
+                    username: document.getElementById('username').value,
+                    email: document.getElementById('email').value,
+                    invite: validInvite,
+                    joined: new Date().toISOString(),
+                    rank: 'Script Kiddie',
+                    points: 0,
+                    completed: []
+                };
+
+                localStorage.setItem('vulnforge_user', JSON.stringify(user));
+
+                // Mark as used locally
+                const data = JSON.parse(storedInvite);
+                data.used = true;
+                localStorage.setItem('vulnforge_invite', JSON.stringify(data));
+
+                window.location.href = '/dashboard.html';
+
+            } catch (err) {
+                showError(err.message);
+            }
         }
         function oauthRegister(provider) {
             if (!validInvite) { showError('Valid invite code required for OAuth registration'); return; }
