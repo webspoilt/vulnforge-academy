@@ -312,29 +312,32 @@
             e.preventDefault();
             if (!validInvite) { showError('Valid invite code required'); return; }
 
-            // Verify with backend
-            try {
-                const API_BASE = 'https://vulnforge-academy.onrender.com';
-                const response = await fetch(`${API_BASE}/api/invite/verify`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code: validInvite })
-                });
+            // Verify locally (client-side implementation)
+            let rank = 'Script Kiddie';
+            let points = 0;
 
-                if (!response.ok) {
-                    throw new Error('Invite code expired or invalid');
-                }
+            if (validInvite === 'ADMIN-SECRET-KEY') {
+                rank = 'Admin';
+                points = 99999;
+            } else if (!validInvite.startsWith('VULN-')) {
+                showError('Invalid invite code format');
+                return;
+            }
 
-                // Proceed with registration
-                const data = await response.json();
+            // Simulate API delay for realism
+            const btn = document.querySelector('.btn-primary');
+            const originalText = btn.textContent;
+            btn.textContent = 'Verifying...';
+            btn.disabled = true;
 
+            setTimeout(() => {
                 const user = {
                     username: document.getElementById('username').value,
                     email: document.getElementById('email').value,
                     invite: validInvite,
                     joined: new Date().toISOString(),
-                    rank: data.rank || 'Script Kiddie',
-                    points: data.rank === 'Admin' ? 99999 : 0,
+                    rank: rank,
+                    points: points,
                     completed: []
                 };
 
@@ -346,10 +349,8 @@
                 localStorage.setItem('vulnforge_invite', JSON.stringify(inviteData));
 
                 window.location.href = '/dashboard.html';
+            }, 800);
 
-            } catch (err) {
-                showError(err.message);
-            }
         }
         function oauthRegister(provider) {
             if (!validInvite) { showError('Valid invite code required for OAuth registration'); return; }
