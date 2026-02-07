@@ -96,24 +96,40 @@ async def init_db():
     Base.metadata.create_all(bind=engine)
     
     with get_db_context() as db:
-        # Check if data already exists
-        existing_user = db.query(User).first()
+        # Check if admin exists specifically
+        admin_user = db.query(User).filter_by(username="admin").first()
+        if not admin_user:
+            print("[DB] Admin user missing. Creating default admin...")
+            admin = User(
+                username="admin", 
+                password="admin123", 
+                email="admin@vulnforge.local", 
+                role="admin", 
+                api_key="ADMIN_API_KEY_12345"
+            )
+            db.add(admin)
+            db.commit()
+            print("[DB] Admin user created.")
+            
+        # Check if data already exists for other users
+        existing_user = db.query(User).filter(User.username != "admin").first()
         if existing_user:
-            print("[DB] Database already initialized")
+            print("[DB] Database already initialized with sample users")
             return
         
-        print("[DB] Initializing database with sample data...")
+        print("[DB] Initializing database with remaining sample data...")
         
         # Insert sample users (passwords in plain text - intentionally vulnerable)
         sample_users = [
-            User(username="admin", password="admin123", email="admin@vulnforge.local", role="admin", api_key="ADMIN_API_KEY_12345"),
             User(username="user1", password="password", email="user1@vulnforge.local", role="user", api_key="USER1_API_KEY_ABCDE"),
             User(username="user2", password="123456", email="user2@vulnforge.local", role="user", api_key="USER2_API_KEY_FGHIJ"),
             User(username="guest", password="guest", email="guest@vulnforge.local", role="guest", api_key=None),
         ]
         
         for user in sample_users:
-            db.add(user)
+            # Check if user exists before adding
+            if not db.query(User).filter_by(username=user.username).first():
+                db.add(user)
         
         # Insert flags for each level
         flags_data = [
