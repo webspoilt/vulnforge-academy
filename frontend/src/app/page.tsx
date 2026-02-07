@@ -1,361 +1,335 @@
-'use client'
+'use client';
 
-import { useState, useEffect, useCallback } from 'react'
-import { ParticleBackground } from '@/components/ParticleBackground'
-import { Terminal } from '@/components/Terminal'
-import { LevelCard } from '@/components/LevelCard'
-import { API_BASE_URL, getLevels, checkHealth, getHint } from '@/lib/api'
+import Link from 'next/link';
 
-interface Level {
-  id: number
-  name: string
-  difficulty: string
-  category: string
-}
-
-interface LevelDisplay {
-  id: number
-  title: string
-  desc: string
-  difficulty: 'easy' | 'medium' | 'hard' | 'nightmare'
-  tags: string[]
-  points: number
-}
-
-// Map API levels to display format
-function mapLevelToDisplay(level: Level): LevelDisplay {
-  const difficultyMap: Record<string, 'easy' | 'medium' | 'hard' | 'nightmare'> = {
-    'easy': 'easy',
-    'medium': 'medium',
-    'hard': 'hard',
-    'nightmare': 'nightmare'
-  }
-
-  const pointsMap: Record<string, number> = {
-    'easy': 100,
-    'medium': 300,
-    'hard': 500,
-    'nightmare': 1000
-  }
-
-  return {
-    id: level.id,
-    title: level.name,
-    desc: `Complete the ${level.category.toUpperCase()} challenge`,
-    difficulty: difficultyMap[level.difficulty] || 'easy',
-    tags: [level.category.toUpperCase()],
-    points: pointsMap[level.difficulty] || 100
-  }
-}
-
-const defaultLevels: LevelDisplay[] = [
-  { id: 1, title: "SQL Injection - Basic", desc: "Classic SQL injection in login form", difficulty: "easy", tags: ["SQLi"], points: 100 },
-  { id: 2, title: "SQL Injection - UNION", desc: "UNION-based SQLi to extract data", difficulty: "easy", tags: ["SQLi"], points: 150 },
-  { id: 3, title: "SQL Injection - Error", desc: "Error-based blind injection", difficulty: "easy", tags: ["SQLi"], points: 150 },
-  { id: 4, title: "XSS - Reflected", desc: "Reflected cross-site scripting", difficulty: "easy", tags: ["XSS"], points: 100 },
-  { id: 5, title: "XSS - Stored", desc: "Persistent XSS in message board", difficulty: "easy", tags: ["XSS"], points: 150 },
-  { id: 6, title: "XSS - DOM", desc: "DOM-based XSS exploitation", difficulty: "easy", tags: ["XSS"], points: 150 },
-  { id: 7, title: "IDOR - User Profile", desc: "Access other users' profiles", difficulty: "medium", tags: ["IDOR"], points: 300 },
-  { id: 8, title: "IDOR - API", desc: "Predictable API object references", difficulty: "medium", tags: ["IDOR"], points: 300 },
-  { id: 9, title: "IDOR - File Access", desc: "Path traversal file access", difficulty: "medium", tags: ["IDOR"], points: 350 },
-  { id: 10, title: "Auth - Brute Force", desc: "Weak password authentication", difficulty: "medium", tags: ["Auth"], points: 300 },
-  { id: 11, title: "Auth - Session", desc: "Session management flaws", difficulty: "medium", tags: ["Auth"], points: 350 },
-  { id: 12, title: "Auth - JWT", desc: "Weak JWT implementation", difficulty: "medium", tags: ["JWT"], points: 400 },
-  { id: 13, title: "SSRF - Basic", desc: "Server-side request forgery", difficulty: "hard", tags: ["SSRF"], points: 500 },
-  { id: 14, title: "SSRF - Cloud Metadata", desc: "Access cloud instance metadata", difficulty: "hard", tags: ["SSRF"], points: 550 },
-  { id: 15, title: "SSRF - Filter Bypass", desc: "Bypass URL filters", difficulty: "hard", tags: ["SSRF"], points: 600 },
-  { id: 16, title: "Upload - Extension", desc: "Bypass extension filters", difficulty: "hard", tags: ["Upload"], points: 500 },
-  { id: 17, title: "Upload - Content-Type", desc: "Spoof content-type headers", difficulty: "hard", tags: ["Upload"], points: 550 },
-  { id: 18, title: "Upload - Magic Bytes", desc: "Polyglot file upload", difficulty: "hard", tags: ["Upload"], points: 600 },
-  { id: 19, title: "RCE - Command Injection", desc: "OS command execution", difficulty: "nightmare", tags: ["RCE"], points: 1000 },
-  { id: 20, title: "The Final Boss", desc: "Chain all vulnerabilities", difficulty: "nightmare", tags: ["Chain"], points: 1500 }
-]
-
-export default function Home() {
-  const [levels, setLevels] = useState<LevelDisplay[]>(defaultLevels)
-  const [completedLevels, setCompletedLevels] = useState<number[]>([])
-  const [terminalOutput, setTerminalOutput] = useState<string[]>([
-    `[SYSTEM] VulnForge Academy v1.0`,
-    `[INFO] API: ${API_BASE_URL}`,
-    `[STATUS] Checking backend connection...`,
-  ])
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [progress, setProgress] = useState(0)
-  const [apiStatus, setApiStatus] = useState<'checking' | 'online' | 'offline'>('checking')
-
-  // Check backend health on mount
-  useEffect(() => {
-    const checkBackend = async () => {
-      try {
-        await checkHealth()
-        setApiStatus('online')
-        setTerminalOutput(prev => [...prev, `[OK] Backend connected successfully!`, ``])
-
-        // Fetch levels from API
-        try {
-          const data = await getLevels()
-          if (data.levels && data.levels.length > 0) {
-            setLevels(data.levels.map(mapLevelToDisplay))
-            setTerminalOutput(prev => [...prev, `[OK] Loaded ${data.levels.length} levels from API`])
-          }
-        } catch {
-          setTerminalOutput(prev => [...prev, `[WARN] Using default levels`])
+export default function LandingPage() {
+    return (
+        <>
+            <style jsx global>{`
+        :root {
+            --primary: #00ff41;
+            --primary-dark: #00cc33;
+            --secondary: #ff0055;
+            --accent: #00d4ff;
+            --warning: #ffcc00;
+            --bg-dark: #0a0a0f;
+            --bg-card: #12121a;
+            --bg-elevated: #1a1a2e;
+            --text-primary: #e0e0e0;
+            --text-secondary: #888899;
+            --border: #2a2a3a;
         }
-      } catch {
-        setApiStatus('offline')
-        setTerminalOutput(prev => [...prev, `[WARN] Backend offline - using demo mode`, ``])
-      }
-    }
-    checkBackend()
-  }, [])
 
-  // Load completed levels from localStorage
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('vulnforge_completed')
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        if (Array.isArray(parsed)) {
-          setCompletedLevels(parsed)
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
         }
-      }
-    } catch (e) {
-      console.error('Error loading progress:', e)
-    }
-  }, [])
 
-  // Calculate progress
-  useEffect(() => {
-    setProgress((completedLevels.length / levels.length) * 100)
-  }, [completedLevels, levels.length])
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 8rem 5% 4rem;
+            background: linear-gradient(135deg, rgba(0,255,65,0.05) 0%, transparent 50%);
+            position: relative;
+            overflow: hidden;
+        }
 
-  // Save progress to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('vulnforge_completed', JSON.stringify(completedLevels))
-    } catch (e) {
-      console.error('Error saving progress:', e)
-    }
-  }, [completedLevels])
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 255, 65, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 65, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+        }
 
-  const startLevel = useCallback(async (level: LevelDisplay) => {
-    setIsProcessing(true)
-    setTerminalOutput([
-      `[INIT] Loading Level ${level.id}: ${level.title}`,
-      `[INFO] Difficulty: ${level.difficulty.toUpperCase()}`,
-      `[INFO] Points: ${level.points}`,
-      `[LOAD] Connecting to vulnerable environment...`,
-    ])
+        .hero-stats {
+            display: flex;
+            gap: 3rem;
+            margin-top: 3rem;
+        }
 
-    // Get hint from API
-    if (apiStatus === 'online') {
-      try {
-        const hintData = await getHint(level.id)
-        setTerminalOutput(prev => [
-          ...prev,
-          `[HINT] ${hintData.hint}`,
-        ])
-      } catch {
-        // No hint available
-      }
-    }
+        .hero-stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
 
-    setTimeout(() => {
-      const endpoint = getChallengeEndpoint(level.id)
-      setTerminalOutput(prev => [
-        ...prev,
-        `[OK] Environment ready`,
-        ``,
-        `[TARGET] ${API_BASE_URL}${endpoint}`,
-        ``,
-        `Good luck, hacker! 🎯`
-      ])
-      setIsProcessing(false)
-    }, 1500)
-  }, [apiStatus])
+        .section {
+            padding: 6rem 5%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
 
-  return (
-    <div className="min-h-screen bg-[#0a0a0f] text-[#e0e0e0] relative overflow-x-hidden">
-      {/* Particle Background */}
-      <ParticleBackground />
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
 
-      {/* API Status Badge */}
-      <div className="fixed top-4 right-4 z-50">
-        <div className={`px-3 py-1 rounded-full font-mono text-xs flex items-center gap-2 ${apiStatus === 'online' ? 'bg-green-900/50 text-green-400 border border-green-600' :
-            apiStatus === 'offline' ? 'bg-red-900/50 text-red-400 border border-red-600' :
-              'bg-yellow-900/50 text-yellow-400 border border-yellow-600'
-          }`}>
-          <span className={`w-2 h-2 rounded-full ${apiStatus === 'online' ? 'bg-green-400 animate-pulse' :
-              apiStatus === 'offline' ? 'bg-red-400' :
-                'bg-yellow-400 animate-pulse'
-            }`}></span>
-          {apiStatus === 'online' ? 'API Online' : apiStatus === 'offline' ? 'Demo Mode' : 'Connecting...'}
-        </div>
-      </div>
+        .info-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s;
+        }
 
-      {/* Hero Section */}
-      <section className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-20">
-        <h1 className="glitch-text text-5xl md:text-7xl font-bold font-mono mb-4 text-center" data-text="VulnForge Academy">
-          <span className="text-[#00ff41]">VulnForge</span> Academy
-        </h1>
+        .info-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
 
-        <p className="text-[#888899] text-lg md:text-xl font-mono mb-8 text-center max-w-2xl">
-          Master ethical hacking through 20 deliberately vulnerable levels
-        </p>
+        .info-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+        }
 
-        {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-12">
-          <a
-            href="#levels"
-            className="px-8 py-4 bg-[#00ff41] text-[#0a0a0f] font-bold font-mono rounded-lg hover:bg-[#00d4ff] transition-colors duration-300 text-center"
-          >
-            Start Training →
-          </a>
-          <a
-            href={`${API_BASE_URL}/docs`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-8 py-4 border-2 border-[#00ff41] text-[#00ff41] font-bold font-mono rounded-lg hover:bg-[#00ff41] hover:text-[#0a0a0f] transition-colors duration-300 text-center"
-          >
-            API Docs 📚
-          </a>
-        </div>
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl">
-          {[
-            { value: '20', label: 'Levels' },
-            { value: '4', label: 'Difficulties' },
-            { value: '10K+', label: 'Points Available' },
-            { value: apiStatus === 'online' ? '🟢' : '🔴', label: 'API Status' }
-          ].map(stat => (
-            <div key={stat.label} className="text-center p-4 bg-[#12121a] rounded-xl border border-[#2a2a3a]">
-              <div className="text-3xl font-bold text-[#00ff41] font-mono">{stat.value}</div>
-              <div className="text-[#888899] text-sm">{stat.label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
+        .step-number {
+            width: 50px;
+            height: 50px;
+            background: var(--bg-elevated);
+            border: 2px solid var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 0 auto 1rem;
+        }
 
-      {/* Legend Section */}
-      <section className="py-8 px-4 bg-[#12121a] border-t border-b border-[#2a2a3a] relative z-10">
-        <div className="max-w-4xl mx-auto flex flex-wrap justify-center gap-6">
-          {[
-            { color: 'dot-easy', label: 'Beginner (1-6)' },
-            { color: 'dot-medium', label: 'Intermediate (7-12)' },
-            { color: 'dot-hard', label: 'Advanced (13-18)' },
-            { color: 'dot-nightmare', label: 'Nightmare (19-20)' }
-          ].map(item => (
-            <div key={item.label} className="flex items-center gap-2 font-mono text-sm">
-              <div className={`legend-dot ${item.color} w-3 h-3 rounded-full`}></div>
-              <span>{item.label}</span>
-            </div>
-          ))}
-        </div>
-      </section>
+        .curriculum-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
 
-      {/* Progress Section */}
-      <section className="py-8 px-4 bg-[#1a1a2e] border-t border-[#2a2a3a] relative z-10">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex justify-between items-center mb-2">
-            <span className="font-mono font-bold">Overall Progress</span>
-            <span className="font-mono text-[#00ff41]">{Math.round(progress)}%</span>
-          </div>
-          <div className="w-full h-2 bg-[#12121a] rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-[#00ff41] to-[#00d4ff] rounded-full transition-all duration-1000 shadow-[0_0_20px_rgba(0,255,65,0.3)] relative"
-              style={{ width: `${progress}%` }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"></div>
-            </div>
-          </div>
-        </div>
-      </section>
+        .curriculum-item {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s;
+        }
 
-      {/* Levels Section */}
-      <section className="py-16 px-4 max-w-7xl mx-auto relative z-10" id="levels">
-        <h2 className="section-title text-2xl font-mono mb-12 flex items-center gap-4">
-          <span className="text-[#00ff41] animate-pulse">&gt;</span>
-          Training Levels
-        </h2>
+        .curriculum-item:hover {
+            border-color: var(--accent);
+            transform: translateX(10px);
+        }
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {levels.map((level, index) => {
-            const isLocked = index > 0 && !completedLevels.includes(levels[index - 1].id)
-            const isCompleted = completedLevels.includes(level.id)
+        @media (max-width: 768px) {
+            .hero-stats { flex-direction: column; gap: 1.5rem; }
+            .steps-grid { grid-template-columns: 1fr; }
+        }
+      `}</style>
 
-            return (
-              <LevelCard
-                key={level.id}
-                level={level}
-                isLocked={isLocked}
-                isCompleted={isCompleted}
-                onClick={() => startLevel(level)}
-              />
-            )
-          })}
-        </div>
-      </section>
+            {/* Navigation */}
+            <nav className="fixed top-0 w-full p-4 px-[5%] bg-[rgba(10,10,15,0.95)] backdrop-blur-md border-b border-[#2a2a3a] z-[1000] flex justify-between items-center">
+                <a href="#" className="font-mono text-2xl font-bold text-[#00ff41] no-underline flex items-center gap-2">
+                    <span>⚡</span>
+                    VulnForge Academy
+                </a>
+                <ul className="hidden md:flex gap-8 list-none">
+                    <li><a href="#what-is-it" className="text-[#888899] hover:text-[#00ff41] transition-colors">What is it?</a></li>
+                    <li><a href="#curriculum" className="text-[#888899] hover:text-[#00ff41] transition-colors">Curriculum</a></li>
+                    <li><a href="#how-it-works" className="text-[#888899] hover:text-[#00ff41] transition-colors">How it Works</a></li>
+                    <li><Link href="/docs" className="text-[#888899] hover:text-[#00ff41] transition-colors">Docs</Link></li>
+                </ul>
+                <div className="flex gap-4">
+                    <a href="/login.html" className="hidden md:block px-6 py-3 border border-[#2a2a3a] rounded-lg text-[#e0e0e0] hover:border-[#00ff41] hover:text-[#00ff41] transition-colors">Login</a>
+                    <a href="/invite.html" className="px-6 py-3 bg-[#00ff41] text-[#0a0a0f] font-bold rounded-lg hover:bg-[#00cc33] hover:shadow-[0_0_30px_rgba(0,255,65,0.4)] transition-all">Start Hacking</a>
+                </div>
+            </nav>
 
-      {/* Terminal Section */}
-      <section className="py-16 px-4 bg-[#12121a] border-t border-[#2a2a3a] relative z-10">
-        <Terminal
-          output={terminalOutput}
-          isProcessing={isProcessing}
-        />
-      </section>
+            {/* Hero */}
+            <section className="hero">
+                <div className="relative z-10 max-w-[700px]">
+                    <h1 className="text-5xl md:text-6xl font-extrabold leading-tight mb-6 bg-gradient-to-br from-[#00ff41] to-[#00d4ff] bg-clip-text text-transparent">
+                        Learn Cybersecurity by Breaking Things
+                    </h1>
+                    <p className="text-xl text-[#888899] mb-8 max-w-[600px]">
+                        VulnForge Academy is a safe, legal training ground where you hack deliberately vulnerable applications to master security. From SQL injection to advanced SSRF—learn by doing.
+                    </p>
+                    <div className="flex gap-4">
+                        <a href="/invite.html" className="px-8 py-4 bg-[#00ff41] text-[#0a0a0f] text-lg font-bold rounded-lg hover:bg-[#00cc33] transition-all">
+                            🚀 Hack The Invite Code
+                        </a>
+                        <a href="#what-is-it" className="px-8 py-4 border border-[#2a2a3a] text-[#e0e0e0] text-lg font-bold rounded-lg hover:border-[#00ff41] hover:text-[#00ff41] transition-all">
+                            📖 Learn More
+                        </a>
+                    </div>
 
-      {/* Footer */}
-      <footer className="py-12 px-4 text-center border-t border-[#2a2a3a] text-[#888899] relative z-10">
-        <div className="flex justify-center gap-8 mb-6 flex-wrap">
-          {[
-            { label: 'API Docs', href: `${API_BASE_URL}/docs` },
-            { label: 'GitHub', href: 'https://github.com/webspoilt/vulnforge-academy' },
-            { label: 'Report Bug', href: 'https://github.com/webspoilt/vulnforge-academy/issues' },
-          ].map(link => (
-            <a
-              key={link.label}
-              href={link.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[#888899] no-underline hover:text-[#00ff41] transition-colors"
-            >
-              {link.label}
-            </a>
-          ))}
-        </div>
-        <p>© {new Date().getFullYear()} VulnForge Academy. Educational purposes only.</p>
-        <p className="text-xs mt-2 text-[#555566]">
-          Frontend: vulnforge-academy.vercel.app | Backend: vulnforge-academy.onrender.com
-        </p>
-      </footer>
-    </div>
-  )
-}
+                    <div className="hero-stats">
+                        <div className="text-center">
+                            <div className="hero-stat-value">20</div>
+                            <div className="text-[#888899] text-sm uppercase tracking-wider">Hands-on Labs</div>
+                        </div>
+                        <div className="text-center">
+                            <div className="hero-stat-value">OWASP</div>
+                            <div className="text-[#888899] text-sm uppercase tracking-wider">Top 10 Covered</div>
+                        </div>
+                        <div className="text-center">
+                            <div className="hero-stat-value">0x1337</div>
+                            <div className="text-[#888899] text-sm uppercase tracking-wider">Active Learners</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-// Helper to get challenge endpoint for each level
-function getChallengeEndpoint(levelId: number): string {
-  const endpoints: Record<number, string> = {
-    1: '/api/levels/sqli/level1?username=',
-    2: '/api/levels/sqli/level2?id=',
-    3: '/api/levels/sqli/level3?order=',
-    4: '/api/levels/xss/level4?name=',
-    5: '/api/levels/xss/level5',
-    6: '/api/levels/xss/level6',
-    7: '/api/levels/idor/level7/user/1',
-    8: '/api/levels/idor/level8/order/1',
-    9: '/api/levels/idor/level9/file?filename=',
-    10: '/api/auth/login',
-    11: '/api/auth/me',
-    12: '/api/auth/login',
-    13: '/api/levels/ssrf/level13?url=',
-    14: '/api/levels/ssrf/level14?url=',
-    15: '/api/levels/ssrf/level15?url=',
-    16: '/api/levels/upload/level16',
-    17: '/api/levels/upload/level17',
-    18: '/api/levels/upload/level18',
-    19: '/api/levels/rce/level19?host=',
-    20: '/api/levels/rce/level20?action=',
-  }
-  return endpoints[levelId] || '/api/levels'
+            {/* What Is It */}
+            <section className="section" id="what-is-it">
+                <h2 className="text-4xl font-extrabold text-center mb-4">What is VulnForge Academy?</h2>
+                <p className="text-center text-[#888899] text-xl mb-16">A comprehensive platform designed to transform beginners into security professionals</p>
+
+                <div className="info-grid">
+                    <div className="info-card">
+                        <div className="info-icon">🛡️</div>
+                        <h3 className="text-xl font-bold mb-4">Safe Environment</h3>
+                        <p className="text-[#888899] leading-relaxed">All vulnerabilities are simulated in isolated containers. You can exploit freely without legal consequences or harming real systems.</p>
+                    </div>
+
+                    <div className="info-card">
+                        <div className="info-icon">🎯</div>
+                        <h3 className="text-xl font-bold mb-4">CTF-Style Learning</h3>
+                        <p className="text-[#888899] leading-relaxed">Each level contains hidden flags. Your goal: find and exploit vulnerabilities to capture them. Gamified progression makes learning addictive.</p>
+                    </div>
+
+                    <div className="info-card">
+                        <div className="info-icon">📈</div>
+                        <h3 className="text-xl font-bold mb-4">Skill Progression</h3>
+                        <p className="text-[#888899] leading-relaxed">Structured curriculum from Beginner (Basic SQLi) to Nightmare (Advanced chaining). Track your growth with detailed analytics.</p>
+                    </div>
+                </div>
+            </section>
+
+            {/* How It Works */}
+            <section className="section bg-[#12121a] border-y border-[#2a2a3a]" id="how-it-works">
+                <h2 className="text-4xl font-extrabold text-center mb-4">How It Works</h2>
+                <p className="text-center text-[#888899] text-xl mb-16">Your journey from novice to security expert</p>
+
+                <div className="steps-grid">
+                    <div className="text-center relative">
+                        <div className="step-number">1</div>
+                        <h4 className="font-bold mb-2">Crack the Invite</h4>
+                        <p className="text-[#888899] text-sm">Prove your potential by hacking our invite code generator to register.</p>
+                    </div>
+                    <div className="text-center relative">
+                        <div className="step-number">2</div>
+                        <h4 className="font-bold mb-2">Learn</h4>
+                        <p className="text-[#888899] text-sm">Study theory, read about vulnerability types, and understand defenses</p>
+                    </div>
+                    <div className="text-center relative">
+                        <div className="step-number">3</div>
+                        <h4 className="font-bold mb-2">Practice</h4>
+                        <p className="text-[#888899] text-sm">Exploit 20 levels covering OWASP Top 10 and advanced techniques</p>
+                    </div>
+                    <div className="text-center relative">
+                        <div className="step-number">4</div>
+                        <h4 className="font-bold mb-2">Master</h4>
+                        <p className="text-[#888899] text-sm">Capture flags, earn points, get certified, and join the community</p>
+                    </div>
+                </div>
+            </section>
+
+            {/* Curriculum */}
+            <section className="section" id="curriculum">
+                <h2 className="text-4xl font-extrabold text-center mb-4">What You'll Learn</h2>
+                <p className="text-center text-[#888899] text-xl mb-16">Comprehensive coverage of modern web vulnerabilities</p>
+
+                <div className="curriculum-grid">
+                    <div className="curriculum-item">
+                        <div className="text-3xl">💉</div>
+                        <div>
+                            <h4 className="font-bold mb-1">SQL Injection</h4>
+                            <span className="text-[#888899] text-sm">Union-based, Blind, Time-based, NoSQL</span>
+                        </div>
+                    </div>
+                    <div className="curriculum-item">
+                        <div className="text-3xl">📝</div>
+                        <div>
+                            <h4 className="font-bold mb-1">Cross-Site Scripting</h4>
+                            <span className="text-[#888899] text-sm">Reflected, Stored, DOM-based, CSP bypass</span>
+                        </div>
+                    </div>
+                    <div className="curriculum-item">
+                        <div className="text-3xl">🔓</div>
+                        <div>
+                            <h4 className="font-bold mb-1">Authentication</h4>
+                            <span className="text-[#888899] text-sm">JWT attacks, Session hijacking, OAuth flaws</span>
+                        </div>
+                    </div>
+                    <div className="curriculum-item">
+                        <div className="text-3xl">🌐</div>
+                        <div>
+                            <h4 className="font-bold mb-1">Server-Side Attacks</h4>
+                            <span className="text-[#888899] text-sm">SSRF, RCE, XXE, Deserialization</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* CTA */}
+            <section className="py-24 px-[5%] text-center bg-gradient-to-br from-[rgba(0,255,65,0.05)] to-[rgba(0,212,255,0.05)]">
+                <h2 className="text-4xl font-extrabold mb-4">Ready to Become a Security Expert?</h2>
+                <p className="text-[#888899] text-lg max-w-[600px] mx-auto mb-8">
+                    Join thousands of learners mastering cybersecurity through hands-on practice.
+                    No credit card required. No legal risks. Just pure learning.
+                </p>
+                <div className="flex justify-center gap-4 flex-wrap">
+                    <a href="/invite.html" className="px-10 py-4 bg-[#00ff41] text-[#0a0a0f] text-lg font-bold rounded-lg hover:bg-[#00cc33] transition-all">
+                        🎯 Start Hacking
+                    </a>
+                    <a href="#curriculum" className="px-10 py-4 border border-[#2a2a3a] text-[#e0e0e0] text-lg font-bold rounded-lg hover:border-[#00ff41] hover:text-[#00ff41] transition-all">
+                        📚 Browse Curriculum
+                    </a>
+                </div>
+            </section>
+
+            {/* Footer */}
+            <footer className="py-12 px-[5%] text-center border-t border-[#2a2a3a] text-[#888899]">
+                <div className="flex justify-center gap-8 mb-8 flex-wrap">
+                    <a href="/docs" className="text-[#888899] hover:text-[#00ff41] transition-colors">Documentation</a>
+                    <a href="https://github.com/webspoilt/vulnforge-academy" className="text-[#888899] hover:text-[#00ff41] transition-colors">GitHub</a>
+                    <a href="#" className="text-[#888899] hover:text-[#00ff41] transition-colors">Discord</a>
+                    <a href="#" className="text-[#888899] hover:text-[#00ff41] transition-colors">Report Bug</a>
+                </div>
+                <p>© 2024 VulnForge Academy. Open source security education.</p>
+                <p className="mt-2 text-sm">
+                    ⚠️ This platform is for educational purposes only. Always practice responsible disclosure.
+                </p>
+            </footer>
+        </>
+    );
 }
