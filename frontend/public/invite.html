@@ -462,7 +462,22 @@
         window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
 
         const CORRECT_CHECKSUM = 696;
-        async function handleInput(e) {
+
+        // Generate invite code client-side
+        function generateInviteCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            const parts = [];
+            for (let i = 0; i < 3; i++) {
+                let part = '';
+                for (let j = 0; j < 4; j++) {
+                    part += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                parts.push(part);
+            }
+            return 'VULN-' + parts.join('-');
+        }
+
+        function handleInput(e) {
             if (e.key === 'Enter') {
                 const input = document.getElementById('checksum-input');
                 const value = parseInt(input.value.trim());
@@ -472,29 +487,20 @@
                     return;
                 }
 
-                addLine('<span class="info">[*] Verifying checksum with server...</span>');
+                addLine('<span class="info">[*] Verifying checksum...</span>');
 
-                try {
-                    // Call backend API
-                    const API_BASE = 'https://vulnforge-academy.onrender.com'; // Or localhost for dev
-                    const response = await fetch(`${API_BASE}/api/invite/generate`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ checksum: value })
-                    });
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        solveChallenge(data.code);
+                // Client-side verification
+                setTimeout(() => {
+                    if (value === CORRECT_CHECKSUM) {
+                        const code = generateInviteCode();
+                        solveChallenge(code);
                     } else {
-                        throw new Error('Invalid checksum');
+                        addLine('<span class="error">[✗] Access Denied: Checksum incorrect</span>');
+                        addLine('<span class="muted">Try again or use the hint button...</span>');
+                        input.value = '';
+                        input.focus();
                     }
-                } catch (err) {
-                    addLine(`<span class="error">[✗] Access Denied: Checksum incorrect</span>`);
-                    addLine('<span class="muted">Try again or use the hint button...</span>');
-                    input.value = '';
-                    input.focus();
-                }
+                }, 500); // Small delay for "hacking" effect
             }
         }
 
