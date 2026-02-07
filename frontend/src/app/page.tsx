@@ -4,8 +4,16 @@ import { useState, useEffect, useCallback } from 'react'
 import { ParticleBackground } from '@/components/ParticleBackground'
 import { Terminal } from '@/components/Terminal'
 import { LevelCard } from '@/components/LevelCard'
+import { API_BASE_URL, getLevels, checkHealth, getHint } from '@/lib/api'
 
 interface Level {
+  id: number
+  name: string
+  difficulty: string
+  category: string
+}
+
+interface LevelDisplay {
   id: number
   title: string
   desc: string
@@ -14,35 +22,92 @@ interface Level {
   points: number
 }
 
-const defaultLevels: Level[] = [
-  { id: 1, title: "Broken Authentication", desc: "Bypass login mechanisms using common credential stuffing techniques.", difficulty: "easy", tags: ["OWASP #1", "Auth"], points: 100 },
-  { id: 2, title: "SQL Injection 101", desc: "Classic UNION-based SQLi in a vulnerable login form.", difficulty: "easy", tags: ["SQLi", "Database"], points: 150 },
-  { id: 3, title: "XSS Reflected", desc: "Inject malicious scripts through URL parameters.", difficulty: "easy", tags: ["XSS", "JavaScript"], points: 150 },
-  { id: 4, title: "IDOR Basics", desc: "Insecure Direct Object Reference in user profile endpoints.", difficulty: "easy", tags: ["IDOR", "API"], points: 200 },
-  { id: 5, title: "Security Misconfig", desc: "Find and exploit default credentials and exposed configs.", difficulty: "easy", tags: ["Config", "Default Creds"], points: 200 },
-  { id: 6, title: "Blind SQLi", desc: "Time-based blind SQL injection without error messages.", difficulty: "medium", tags: ["SQLi", "Blind"], points: 300 },
-  { id: 7, title: "Stored XSS", desc: "Persistent cross-site scripting in comment sections.", difficulty: "medium", tags: ["XSS", "Stored"], points: 300 },
-  { id: 8, title: "JWT Weakness", desc: "Crack weak JWT secrets and forge authentication tokens.", difficulty: "medium", tags: ["JWT", "Crypto"], points: 350 },
-  { id: 9, title: "SSRF 101", desc: "Server-Side Request Forgery to access internal services.", difficulty: "medium", tags: ["SSRF", "Network"], points: 400 },
-  { id: 10, title: "XXE Injection", desc: "XML External Entity attacks in file upload parsers.", difficulty: "medium", tags: ["XXE", "XML"], points: 400 },
-  { id: 11, title: "Command Injection", desc: "OS command execution through unsanitized input fields.", difficulty: "hard", tags: ["RCE", "Command"], points: 500 },
-  { id: 12, title: "Deserialization", desc: "Insecure deserialization of user-supplied data objects.", difficulty: "hard", tags: ["Deserialize", "RCE"], points: 550 },
-  { id: 13, title: "Race Conditions", desc: "Time-of-check to time-of-use vulnerabilities.", difficulty: "hard", tags: ["Race", "Logic"], points: 550 },
-  { id: 14, title: "NoSQL Injection", desc: "Bypass authentication in MongoDB-based applications.", difficulty: "hard", tags: ["NoSQL", "MongoDB"], points: 600 },
-  { id: 15, title: "GraphQL Abuse", desc: "Introspection queries and batching attacks on GraphQL APIs.", difficulty: "hard", tags: ["GraphQL", "API"], points: 600 },
-  { id: 16, title: "Advanced SSRF", desc: "Bypass filters and access cloud metadata services.", difficulty: "nightmare", tags: ["SSRF", "Cloud"], points: 800 },
-  { id: 17, title: "Prototype Pollution", desc: "JavaScript prototype chain manipulation attacks.", difficulty: "nightmare", tags: ["JS", "Prototype"], points: 850 },
-  { id: 18, title: "Polyglot Injection", desc: "Multi-context payload execution across different parsers.", difficulty: "nightmare", tags: ["Advanced", "Polyglot"], points: 900 },
-  { id: 19, title: "Web Cache Poisoning", desc: "Poison CDN caches to serve malicious content.", difficulty: "nightmare", tags: ["Cache", "HTTP"], points: 950 },
-  { id: 20, title: "The Final Boss", desc: "Chain multiple vulnerabilities for full system compromise.", difficulty: "nightmare", tags: ["Chain", "RCE", "All"], points: 1500 }
+// Map API levels to display format
+function mapLevelToDisplay(level: Level): LevelDisplay {
+  const difficultyMap: Record<string, 'easy' | 'medium' | 'hard' | 'nightmare'> = {
+    'easy': 'easy',
+    'medium': 'medium',
+    'hard': 'hard',
+    'nightmare': 'nightmare'
+  }
+
+  const pointsMap: Record<string, number> = {
+    'easy': 100,
+    'medium': 300,
+    'hard': 500,
+    'nightmare': 1000
+  }
+
+  return {
+    id: level.id,
+    title: level.name,
+    desc: `Complete the ${level.category.toUpperCase()} challenge`,
+    difficulty: difficultyMap[level.difficulty] || 'easy',
+    tags: [level.category.toUpperCase()],
+    points: pointsMap[level.difficulty] || 100
+  }
+}
+
+const defaultLevels: LevelDisplay[] = [
+  { id: 1, title: "SQL Injection - Basic", desc: "Classic SQL injection in login form", difficulty: "easy", tags: ["SQLi"], points: 100 },
+  { id: 2, title: "SQL Injection - UNION", desc: "UNION-based SQLi to extract data", difficulty: "easy", tags: ["SQLi"], points: 150 },
+  { id: 3, title: "SQL Injection - Error", desc: "Error-based blind injection", difficulty: "easy", tags: ["SQLi"], points: 150 },
+  { id: 4, title: "XSS - Reflected", desc: "Reflected cross-site scripting", difficulty: "easy", tags: ["XSS"], points: 100 },
+  { id: 5, title: "XSS - Stored", desc: "Persistent XSS in message board", difficulty: "easy", tags: ["XSS"], points: 150 },
+  { id: 6, title: "XSS - DOM", desc: "DOM-based XSS exploitation", difficulty: "easy", tags: ["XSS"], points: 150 },
+  { id: 7, title: "IDOR - User Profile", desc: "Access other users' profiles", difficulty: "medium", tags: ["IDOR"], points: 300 },
+  { id: 8, title: "IDOR - API", desc: "Predictable API object references", difficulty: "medium", tags: ["IDOR"], points: 300 },
+  { id: 9, title: "IDOR - File Access", desc: "Path traversal file access", difficulty: "medium", tags: ["IDOR"], points: 350 },
+  { id: 10, title: "Auth - Brute Force", desc: "Weak password authentication", difficulty: "medium", tags: ["Auth"], points: 300 },
+  { id: 11, title: "Auth - Session", desc: "Session management flaws", difficulty: "medium", tags: ["Auth"], points: 350 },
+  { id: 12, title: "Auth - JWT", desc: "Weak JWT implementation", difficulty: "medium", tags: ["JWT"], points: 400 },
+  { id: 13, title: "SSRF - Basic", desc: "Server-side request forgery", difficulty: "hard", tags: ["SSRF"], points: 500 },
+  { id: 14, title: "SSRF - Cloud Metadata", desc: "Access cloud instance metadata", difficulty: "hard", tags: ["SSRF"], points: 550 },
+  { id: 15, title: "SSRF - Filter Bypass", desc: "Bypass URL filters", difficulty: "hard", tags: ["SSRF"], points: 600 },
+  { id: 16, title: "Upload - Extension", desc: "Bypass extension filters", difficulty: "hard", tags: ["Upload"], points: 500 },
+  { id: 17, title: "Upload - Content-Type", desc: "Spoof content-type headers", difficulty: "hard", tags: ["Upload"], points: 550 },
+  { id: 18, title: "Upload - Magic Bytes", desc: "Polyglot file upload", difficulty: "hard", tags: ["Upload"], points: 600 },
+  { id: 19, title: "RCE - Command Injection", desc: "OS command execution", difficulty: "nightmare", tags: ["RCE"], points: 1000 },
+  { id: 20, title: "The Final Boss", desc: "Chain all vulnerabilities", difficulty: "nightmare", tags: ["Chain"], points: 1500 }
 ]
 
 export default function Home() {
-  const [levels] = useState<Level[]>(defaultLevels)
+  const [levels, setLevels] = useState<LevelDisplay[]>(defaultLevels)
   const [completedLevels, setCompletedLevels] = useState<number[]>([])
-  const [terminalOutput, setTerminalOutput] = useState<string[]>([])
+  const [terminalOutput, setTerminalOutput] = useState<string[]>([
+    `[SYSTEM] VulnForge Academy v1.0`,
+    `[INFO] API: ${API_BASE_URL}`,
+    `[STATUS] Checking backend connection...`,
+  ])
   const [isProcessing, setIsProcessing] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [apiStatus, setApiStatus] = useState<'checking' | 'online' | 'offline'>('checking')
+
+  // Check backend health on mount
+  useEffect(() => {
+    const checkBackend = async () => {
+      try {
+        await checkHealth()
+        setApiStatus('online')
+        setTerminalOutput(prev => [...prev, `[OK] Backend connected successfully!`, ``])
+
+        // Fetch levels from API
+        try {
+          const data = await getLevels()
+          if (data.levels && data.levels.length > 0) {
+            setLevels(data.levels.map(mapLevelToDisplay))
+            setTerminalOutput(prev => [...prev, `[OK] Loaded ${data.levels.length} levels from API`])
+          }
+        } catch {
+          setTerminalOutput(prev => [...prev, `[WARN] Using default levels`])
+        }
+      } catch {
+        setApiStatus('offline')
+        setTerminalOutput(prev => [...prev, `[WARN] Backend offline - using demo mode`, ``])
+      }
+    }
+    checkBackend()
+  }, [])
 
   // Load completed levels from localStorage
   useEffect(() => {
@@ -73,36 +138,63 @@ export default function Home() {
     }
   }, [completedLevels])
 
-  const startLevel = useCallback((level: Level) => {
+  const startLevel = useCallback(async (level: LevelDisplay) => {
     setIsProcessing(true)
     setTerminalOutput([
-      `Initializing level ${level.id}: ${level.title}...`,
+      `[INIT] Loading Level ${level.id}: ${level.title}`,
       `[INFO] Difficulty: ${level.difficulty.toUpperCase()}`,
       `[INFO] Points: ${level.points}`,
-      `[LOAD] Loading vulnerable environment...`,
+      `[LOAD] Connecting to vulnerable environment...`,
     ])
 
-    // Simulate processing
+    // Get hint from API
+    if (apiStatus === 'online') {
+      try {
+        const hintData = await getHint(level.id)
+        setTerminalOutput(prev => [
+          ...prev,
+          `[HINT] ${hintData.hint}`,
+        ])
+      } catch {
+        // No hint available
+      }
+    }
+
     setTimeout(() => {
+      const endpoint = getChallengeEndpoint(level.id)
       setTerminalOutput(prev => [
         ...prev,
         `[OK] Environment ready`,
-        `[ACTION] Navigate to /levels/${level.id} to begin`,
+        ``,
+        `[TARGET] ${API_BASE_URL}${endpoint}`,
         ``,
         `Good luck, hacker! 🎯`
       ])
       setIsProcessing(false)
     }, 1500)
-  }, [])
+  }, [apiStatus])
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-[#e0e0e0] relative overflow-x-hidden">
       {/* Particle Background */}
       <ParticleBackground />
 
+      {/* API Status Badge */}
+      <div className="fixed top-4 right-4 z-50">
+        <div className={`px-3 py-1 rounded-full font-mono text-xs flex items-center gap-2 ${apiStatus === 'online' ? 'bg-green-900/50 text-green-400 border border-green-600' :
+            apiStatus === 'offline' ? 'bg-red-900/50 text-red-400 border border-red-600' :
+              'bg-yellow-900/50 text-yellow-400 border border-yellow-600'
+          }`}>
+          <span className={`w-2 h-2 rounded-full ${apiStatus === 'online' ? 'bg-green-400 animate-pulse' :
+              apiStatus === 'offline' ? 'bg-red-400' :
+                'bg-yellow-400 animate-pulse'
+            }`}></span>
+          {apiStatus === 'online' ? 'API Online' : apiStatus === 'offline' ? 'Demo Mode' : 'Connecting...'}
+        </div>
+      </div>
+
       {/* Hero Section */}
       <section className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-20">
-        {/* Glitch Title */}
         <h1 className="glitch-text text-5xl md:text-7xl font-bold font-mono mb-4 text-center" data-text="VulnForge Academy">
           <span className="text-[#00ff41]">VulnForge</span> Academy
         </h1>
@@ -120,12 +212,12 @@ export default function Home() {
             Start Training →
           </a>
           <a
-            href="https://github.com/webspoilt/vulnforge-academy"
+            href={`${API_BASE_URL}/docs`}
             target="_blank"
             rel="noopener noreferrer"
             className="px-8 py-4 border-2 border-[#00ff41] text-[#00ff41] font-bold font-mono rounded-lg hover:bg-[#00ff41] hover:text-[#0a0a0f] transition-colors duration-300 text-center"
           >
-            View on GitHub
+            API Docs 📚
           </a>
         </div>
 
@@ -135,7 +227,7 @@ export default function Home() {
             { value: '20', label: 'Levels' },
             { value: '4', label: 'Difficulties' },
             { value: '10K+', label: 'Points Available' },
-            { value: '∞', label: 'Learning' }
+            { value: apiStatus === 'online' ? '🟢' : '🔴', label: 'API Status' }
           ].map(stat => (
             <div key={stat.label} className="text-center p-4 bg-[#12121a] rounded-xl border border-[#2a2a3a]">
               <div className="text-3xl font-bold text-[#00ff41] font-mono">{stat.value}</div>
@@ -149,10 +241,10 @@ export default function Home() {
       <section className="py-8 px-4 bg-[#12121a] border-t border-b border-[#2a2a3a] relative z-10">
         <div className="max-w-4xl mx-auto flex flex-wrap justify-center gap-6">
           {[
-            { color: 'dot-easy', label: 'Beginner (1-5)' },
-            { color: 'dot-medium', label: 'Intermediate (6-10)' },
-            { color: 'dot-hard', label: 'Advanced (11-15)' },
-            { color: 'dot-nightmare', label: 'Nightmare (16-20)' }
+            { color: 'dot-easy', label: 'Beginner (1-6)' },
+            { color: 'dot-medium', label: 'Intermediate (7-12)' },
+            { color: 'dot-hard', label: 'Advanced (13-18)' },
+            { color: 'dot-nightmare', label: 'Nightmare (19-20)' }
           ].map(item => (
             <div key={item.label} className="flex items-center gap-2 font-mono text-sm">
               <div className={`legend-dot ${item.color} w-3 h-3 rounded-full`}></div>
@@ -217,23 +309,53 @@ export default function Home() {
       <footer className="py-12 px-4 text-center border-t border-[#2a2a3a] text-[#888899] relative z-10">
         <div className="flex justify-center gap-8 mb-6 flex-wrap">
           {[
-            { label: 'Documentation', href: '#' },
+            { label: 'API Docs', href: `${API_BASE_URL}/docs` },
             { label: 'GitHub', href: 'https://github.com/webspoilt/vulnforge-academy' },
             { label: 'Report Bug', href: 'https://github.com/webspoilt/vulnforge-academy/issues' },
           ].map(link => (
             <a
               key={link.label}
               href={link.href}
-              target={link.href.startsWith('http') ? '_blank' : undefined}
-              rel={link.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-[#888899] no-underline hover:text-[#00ff41] transition-colors"
             >
               {link.label}
             </a>
           ))}
         </div>
-        <p>© {new Date().getFullYear()} VulnForge Academy. Educational purposes only. Hack responsibly.</p>
+        <p>© {new Date().getFullYear()} VulnForge Academy. Educational purposes only.</p>
+        <p className="text-xs mt-2 text-[#555566]">
+          Frontend: vulnforge-academy.vercel.app | Backend: vulnforge-academy.onrender.com
+        </p>
       </footer>
     </div>
   )
+}
+
+// Helper to get challenge endpoint for each level
+function getChallengeEndpoint(levelId: number): string {
+  const endpoints: Record<number, string> = {
+    1: '/api/levels/sqli/level1?username=',
+    2: '/api/levels/sqli/level2?id=',
+    3: '/api/levels/sqli/level3?order=',
+    4: '/api/levels/xss/level4?name=',
+    5: '/api/levels/xss/level5',
+    6: '/api/levels/xss/level6',
+    7: '/api/levels/idor/level7/user/1',
+    8: '/api/levels/idor/level8/order/1',
+    9: '/api/levels/idor/level9/file?filename=',
+    10: '/api/auth/login',
+    11: '/api/auth/me',
+    12: '/api/auth/login',
+    13: '/api/levels/ssrf/level13?url=',
+    14: '/api/levels/ssrf/level14?url=',
+    15: '/api/levels/ssrf/level15?url=',
+    16: '/api/levels/upload/level16',
+    17: '/api/levels/upload/level17',
+    18: '/api/levels/upload/level18',
+    19: '/api/levels/rce/level19?host=',
+    20: '/api/levels/rce/level20?action=',
+  }
+  return endpoints[levelId] || '/api/levels'
 }
