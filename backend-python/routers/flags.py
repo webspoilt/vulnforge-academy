@@ -2,85 +2,62 @@
 Flag verification endpoints
 """
 
-from fastapi import APIRouter, HTTPException
-import aiosqlite
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
 
-from database import get_db
+from database import get_db, Flag
 from models import FlagSubmit, FlagResponse
 
 router = APIRouter()
 
 @router.post("/verify", response_model=FlagResponse)
-async def verify_flag(submission: FlagSubmit):
+async def verify_flag(submission: FlagSubmit, db: Session = Depends(get_db)):
     """
     Verify a flag submission for a level
     """
-    db = await get_db()
-    try:
-        cursor = await db.execute(
-            "SELECT flag FROM flags WHERE level_id = ?",
-            (submission.level_id,)
+    flag = db.query(Flag).filter(Flag.level_id == submission.level_id).first()
+    
+    if not flag:
+        return FlagResponse(
+            success=False,
+            message=f"Level {submission.level_id} not found"
         )
-        result = await cursor.fetchone()
-        
-        if not result:
-            return FlagResponse(
-                success=False,
-                message=f"Level {submission.level_id} not found"
-            )
-        
-        correct_flag = result[0]
-        
-        if submission.flag.strip() == correct_flag:
-            return FlagResponse(
-                success=True,
-                message=f"🎉 Correct! Level {submission.level_id} completed!"
-            )
-        else:
-            return FlagResponse(
-                success=False,
-                message="Incorrect flag. Keep trying!"
-            )
-    finally:
-        await db.close()
+    
+    if submission.flag.strip() == flag.flag:
+        return FlagResponse(
+            success=True,
+            message=f"🎉 Correct! Level {submission.level_id} completed!"
+        )
+    else:
+        return FlagResponse(
+            success=False,
+            message="Incorrect flag. Keep trying!"
+        )
 
 @router.get("/hint/{level_id}")
-async def get_hint(level_id: int):
+async def get_hint(level_id: int, db: Session = Depends(get_db)):
     """
     Get a hint for a specific level
     """
-    db = await get_db()
-    try:
-        cursor = await db.execute(
-            "SELECT hint FROM flags WHERE level_id = ?",
-            (level_id,)
-        )
-        result = await cursor.fetchone()
-        
-        if result:
-            return {"level_id": level_id, "hint": result[0]}
-        else:
-            return {"error": "Level not found"}
-    finally:
-        await db.close()
+    flag = db.query(Flag).filter(Flag.level_id == level_id).first()
+    
+    if flag:
+        return {"level_id": level_id, "hint": flag.hint}
+    else:
+        return {"error": "Level not found"}
 
 @router.get("/all")
-async def get_all_flags():
+async def get_all_flags(db: Session = Depends(get_db)):
     """
     Get all flags (DEBUG ONLY - should be disabled in production)
     VULNERABILITY: Exposes all flags without authentication
     """
-    db = await get_db()
-    try:
-        cursor = await db.execute("SELECT level_id, flag, hint FROM flags ORDER BY level_id")
-        flags = await cursor.fetchall()
-        
-        return {
-            "warning": "This endpoint should be disabled in production!",
-            "flags": [
-                {"level_id": f[0], "flag": f[1], "hint": f[2]}
-                for f in flags
-            ]
-        }
-    finally:
-        await db.close()
+    flags = db.query(Flag).order_by(Flag.level_id).all()
+    
+    return {
+        "warning": "This endpoint should be disabled in production!",
+        "flags": [
+            {"level_id": f.level_id, "flag": f.flag, "hint": f.hint}
+            for f in flags
+        ]
+    }

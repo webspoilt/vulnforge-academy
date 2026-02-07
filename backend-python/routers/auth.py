@@ -7,9 +7,10 @@ from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import JSONResponse
 from datetime import datetime, timedelta
 from jose import jwt
-import aiosqlite
+from sqlalchemy.orm import Session
+from sqlalchemy import text
 
-from database import get_db
+from database import get_db, User
 from models import UserCreate, UserLogin, TokenResponse, UserResponse
 
 router = APIRouter()
@@ -19,38 +20,36 @@ SECRET_KEY = "secret123"  # Intentionally weak
 ALGORITHM = "HS256"
 
 @router.post("/register")
-async def register(user: UserCreate):
+async def register(user: UserCreate, db: Session = Depends(get_db)):
     """
     Register a new user
     VULNERABILITY: No password hashing, weak validation
     """
-    db = await get_db()
     try:
         # VULNERABLE: Password stored in plain text
-        await db.execute(
-            "INSERT INTO users (username, password, email) VALUES (?, ?, ?)",
-            (user.username, user.password, user.email)
+        new_user = User(
+            username=user.username,
+            password=user.password,  # Plain text!
+            email=user.email
         )
-        await db.commit()
+        db.add(new_user)
+        db.commit()
         return {"message": "User registered successfully", "username": user.username}
     except Exception as e:
+        db.rollback()
         # VULNERABLE: Leaks database error information
         raise HTTPException(status_code=400, detail=f"Registration failed: {str(e)}")
-    finally:
-        await db.close()
 
 @router.post("/login", response_model=TokenResponse)
-async def login(user: UserLogin):
+async def login(user: UserLogin, db: Session = Depends(get_db)):
     """
     Login endpoint
     VULNERABILITY: SQL Injection in username/password check
     """
-    db = await get_db()
     try:
         # VULNERABLE: SQL Injection - Direct string formatting
-        query = f"SELECT * FROM users WHERE username = '{user.username}' AND password = '{user.password}'"
-        cursor = await db.execute(query)
-        result = await cursor.fetchone()
+        query = text(f"SELECT * FROM users WHERE username = '{user.username}' AND password = '{user.password}'")
+        result = db.execute(query).fetchone()
         
         if result:
             # Create JWT token
@@ -63,8 +62,10 @@ async def login(user: UserLogin):
             return TokenResponse(access_token=token)
         else:
             raise HTTPException(status_code=401, detail="Invalid credentials")
-    finally:
-        await db.close()
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Login error: {str(e)}")
 
 @router.get("/me")
 async def get_current_user(request: Request):
@@ -85,23 +86,18 @@ async def get_current_user(request: Request):
         raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
 
 @router.get("/users")
-async def list_users():
+async def list_users(db: Session = Depends(get_db)):
     """
     List all users
     VULNERABILITY: No authentication required, exposes sensitive data
     """
-    db = await get_db()
-    try:
-        cursor = await db.execute("SELECT id, username, email, role, balance FROM users")
-        users = await cursor.fetchall()
-        return {
-            "users": [
-                {"id": u[0], "username": u[1], "email": u[2], "role": u[3], "balance": u[4]}
-                for u in users
-            ]
-        }
-    finally:
-        await db.close()
+    users = db.query(User).all()
+    return {
+        "users": [
+            {"id": u.id, "username": u.username, "email": u.email, "role": u.role, "balance": u.balance}
+            for u in users
+        ]
+    }
 
 @router.get("/admin")
 async def admin_panel(request: Request):

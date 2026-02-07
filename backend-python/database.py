@@ -1,89 +1,122 @@
 """
-Database setup with intentional vulnerabilities
+Database setup with PostgreSQL (Neon) or SQLite fallback
+Includes intentional vulnerabilities for training
 """
 
-import aiosqlite
 import os
+from sqlalchemy import create_engine, Column, Integer, String, Float, Text, DateTime, func
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from contextlib import contextmanager
 
-DATABASE_URL = "vulnforge.db"
+# Database URL - uses PostgreSQL if available, SQLite as fallback
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "sqlite:///./vulnforge.db"
+)
+
+# Fix for Neon/Heroku PostgreSQL URLs
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+# Create engine
+if DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+else:
+    engine = create_engine(DATABASE_URL)
+
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+# Models
+class User(Base):
+    __tablename__ = "users"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(100), unique=True, nullable=False)
+    password = Column(String(255), nullable=False)  # VULNERABLE: Plain text
+    email = Column(String(255))
+    role = Column(String(50), default="user")
+    api_key = Column(String(100))
+    balance = Column(Float, default=1000.0)
+
+class Flag(Base):
+    __tablename__ = "flags"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    level_id = Column(Integer, unique=True, nullable=False)
+    flag = Column(String(255), nullable=False)
+    hint = Column(Text)
+
+class Product(Base):
+    __tablename__ = "products"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    price = Column(Float, nullable=False)
+    description = Column(Text)
+    owner_id = Column(Integer)
+
+class Message(Base):
+    __tablename__ = "messages"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer)
+    content = Column(Text, nullable=False)  # VULNERABLE: Not sanitized
+    created_at = Column(DateTime, server_default=func.now())
+
+class File(Base):
+    __tablename__ = "files"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    filename = Column(String(255), nullable=False)
+    filepath = Column(String(500), nullable=False)
+    uploaded_by = Column(Integer)
+    uploaded_at = Column(DateTime, server_default=func.now())
+
+# Database dependency
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+@contextmanager
+def get_db_context():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 async def init_db():
-    """Initialize database with sample data"""
-    async with aiosqlite.connect(DATABASE_URL) as db:
-        # Create users table
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT UNIQUE NOT NULL,
-                password TEXT NOT NULL,  -- VULNERABLE: Stored in plain text
-                email TEXT,
-                role TEXT DEFAULT 'user',
-                api_key TEXT,
-                balance REAL DEFAULT 1000.0
-            )
-        """)
+    """Initialize database with tables and sample data"""
+    # Create all tables
+    Base.metadata.create_all(bind=engine)
+    
+    with get_db_context() as db:
+        # Check if data already exists
+        existing_user = db.query(User).first()
+        if existing_user:
+            print("[DB] Database already initialized")
+            return
         
-        # Create flags table
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS flags (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                level_id INTEGER UNIQUE NOT NULL,
-                flag TEXT NOT NULL,
-                hint TEXT
-            )
-        """)
-        
-        # Create products table (for IDOR)
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS products (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                price REAL NOT NULL,
-                description TEXT,
-                owner_id INTEGER
-            )
-        """)
-        
-        # Create messages table (for stored XSS)
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS messages (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER,
-                content TEXT NOT NULL,  -- VULNERABLE: Not sanitized
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        # Create files table (for file upload)
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS files (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                filename TEXT NOT NULL,
-                filepath TEXT NOT NULL,
-                uploaded_by INTEGER,
-                uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+        print("[DB] Initializing database with sample data...")
         
         # Insert sample users (passwords in plain text - intentionally vulnerable)
         sample_users = [
-            ("admin", "admin123", "admin@vulnforge.local", "admin", "ADMIN_API_KEY_12345"),
-            ("user1", "password", "user1@vulnforge.local", "user", "USER1_API_KEY_ABCDE"),
-            ("user2", "123456", "user2@vulnforge.local", "user", "USER2_API_KEY_FGHIJ"),
-            ("guest", "guest", "guest@vulnforge.local", "guest", None),
+            User(username="admin", password="admin123", email="admin@vulnforge.local", role="admin", api_key="ADMIN_API_KEY_12345"),
+            User(username="user1", password="password", email="user1@vulnforge.local", role="user", api_key="USER1_API_KEY_ABCDE"),
+            User(username="user2", password="123456", email="user2@vulnforge.local", role="user", api_key="USER2_API_KEY_FGHIJ"),
+            User(username="guest", password="guest", email="guest@vulnforge.local", role="guest", api_key=None),
         ]
         
         for user in sample_users:
-            try:
-                await db.execute(
-                    "INSERT OR IGNORE INTO users (username, password, email, role, api_key) VALUES (?, ?, ?, ?, ?)",
-                    user
-                )
-            except:
-                pass
+            db.add(user)
         
         # Insert flags for each level
-        flags = [
+        flags_data = [
             (1, "FLAG{sql1_b4s1c_1nj3ct10n}", "Try adding a single quote"),
             (2, "FLAG{sql2_un10n_s3l3ct}", "UNION SELECT is your friend"),
             (3, "FLAG{sql3_3rr0r_b4s3d}", "Make the database throw an error"),
@@ -106,33 +139,24 @@ async def init_db():
             (20, "FLAG{nightmare20_ch41n_m4st3r}", "Chain them all together"),
         ]
         
-        for flag in flags:
-            try:
-                await db.execute(
-                    "INSERT OR IGNORE INTO flags (level_id, flag, hint) VALUES (?, ?, ?)",
-                    flag
-                )
-            except:
-                pass
+        for level_id, flag, hint in flags_data:
+            db.add(Flag(level_id=level_id, flag=flag, hint=hint))
         
         # Insert sample products
-        products = [
+        products_data = [
             ("Secret Document", 9999.99, "Contains sensitive information", 1),
             ("User Manual", 0.00, "Public documentation", None),
             ("Admin Panel Access", 99999.99, "Full system access", 1),
         ]
         
-        for product in products:
-            try:
-                await db.execute(
-                    "INSERT OR IGNORE INTO products (name, price, description, owner_id) VALUES (?, ?, ?, ?)",
-                    product
-                )
-            except:
-                pass
+        for name, price, desc, owner_id in products_data:
+            db.add(Product(name=name, price=price, description=desc, owner_id=owner_id))
         
-        await db.commit()
+        db.commit()
+        print("[DB] Database initialized successfully!")
 
-async def get_db():
-    """Get database connection"""
-    return await aiosqlite.connect(DATABASE_URL)
+# For backward compatibility with async code
+async def get_db_async():
+    """Async database getter - returns sync session"""
+    db = SessionLocal()
+    return db
