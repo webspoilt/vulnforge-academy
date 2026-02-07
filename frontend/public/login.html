@@ -300,11 +300,93 @@
             localStorage.setItem('vulnforge_session', JSON.stringify(session));
             window.location.href = '/';
         }
-        function handleLogin(e) {
+        async function handleLogin(e) {
             e.preventDefault();
-            const session = { user: document.getElementById('email').value, method: 'password', lastLogin: new Date().toISOString() };
-            localStorage.setItem('vulnforge_session', JSON.stringify(session));
-            window.location.href = '/';
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const btn = document.querySelector('.btn-primary');
+
+            // Basic validation
+            if (!emailInput.value || !passwordInput.value) {
+                alert('Please enter both email/username and password');
+                return;
+            }
+
+            // UI Loading state
+            const originalText = btn.innerText;
+            btn.innerText = 'Authenticating...';
+            btn.disabled = true;
+
+            try {
+                // Determine if input is email or username (simple check)
+                const isEmail = emailInput.value.includes('@');
+                const payload = {
+                    username: emailInput.value, // Backend expects 'username' field for both
+                    password: passwordInput.value
+                };
+
+                const API_BASE = 'https://vulnforge-academy.onrender.com';
+                const response = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Login failed');
+                }
+
+                // Login Success
+                const session = {
+                    token: data.access_token,
+                    type: data.token_type,
+                    user: emailInput.value,
+                    lastLogin: new Date().toISOString()
+                };
+
+                localStorage.setItem('vulnforge_token', data.access_token);
+                localStorage.setItem('vulnforge_session', JSON.stringify(session));
+
+                // Get user details to confirm role/points
+                try {
+                    const userResp = await fetch(`${API_BASE}/api/auth/me`, {
+                        headers: { 'Authorization': `Bearer ${data.access_token}` }
+                    });
+                    if (userResp.ok) {
+                        const userData = await userResp.json();
+                        const userProfile = {
+                            username: userData.username,
+                            role: userData.role,
+                            rank: userData.role === 'admin' ? 'Admin' : 'Script Kiddie',
+                            points: userData.balance || 0
+                        };
+                        localStorage.setItem('vulnforge_user', JSON.stringify(userProfile));
+                    }
+                } catch (err) {
+                    console.warn('Failed to fetch user profile, proceeding with basic session');
+                }
+
+                // Redirect to dashboard
+                window.location.href = '/dashboard.html';
+
+            } catch (err) {
+                console.error(err);
+                // Show error in UI
+                const container = document.querySelector('.login-box');
+                let errorAlert = document.getElementById('login-error');
+                if (!errorAlert) {
+                    errorAlert = document.createElement('div');
+                    errorAlert.id = 'login-error';
+                    errorAlert.style.cssText = 'background: rgba(255, 0, 85, 0.1); border: 1px solid #ff0055; color: #ff0055; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; text-align: center;';
+                    container.insertBefore(errorAlert, container.firstChild);
+                }
+                errorAlert.innerText = `⚠️ ${err.message}`;
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
         }
     </script>
 </body>

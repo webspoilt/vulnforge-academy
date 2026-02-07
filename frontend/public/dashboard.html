@@ -367,9 +367,15 @@
             document.getElementById('user-name').textContent = user.username;
             document.getElementById('user-rank').textContent = user.rank || 'Novice';
             document.querySelector('.avatar').textContent = user.username[0].toUpperCase();
+
+            // Update points if available
+            if (user.points !== undefined) {
+                const pointsDisplay = document.querySelector('.stat-value'); // First one is points
+                if (pointsDisplay) pointsDisplay.textContent = user.points;
+            }
         } else {
             // Redirect to login if not logged in
-            // window.location.href = '/login.html';
+            window.location.href = '/login.html';
         }
 
         function logout() {
