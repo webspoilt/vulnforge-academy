@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | VulnForge Academy</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Inter:wght@400;600;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary: #00ff41;
+            --primary-dark: #00cc33;
+            --secondary: #ff0055;
+            --accent: #00d4ff;
+            --warning: #ffcc00;
+            --bg-dark: #0a0a0f;
+            --bg-card: #12121a;
+            --bg-elevated: #1a1a2e;
+            --text-primary: #e0e0e0;
+            --text-secondary: #888899;
+            --border: #2a2a3a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            background: var(--bg-card);
+            border-right: 1px solid var(--border);
+            padding: 2rem 1.5rem;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-logo {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .nav-section {
+            margin-bottom: 2rem;
+        }
+
+        .nav-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: var(--bg-elevated);
+            color: var(--primary);
+        }
+
+        .main-content {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            background: var(--bg-elevated);
+            border-radius: 50%;
+            border: 2px solid var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 0.5rem 0;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .levels-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .level-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .level-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+        }
+
+        .level-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .level-difficulty {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .diff-easy {
+            background: rgba(0, 255, 65, 0.1);
+            color: var(--primary);
+            border: 1px solid var(--primary);
+        }
+
+        .diff-med {
+            background: rgba(255, 204, 0, 0.1);
+            color: var(--warning);
+            border: 1px solid var(--warning);
+        }
+
+        .diff-hard {
+            background: rgba(255, 0, 85, 0.1);
+            color: var(--secondary);
+            border: 1px solid var(--secondary);
+        }
+
+        .level-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .level-desc {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: var(--primary);
+            color: var(--bg-dark);
+        }
+
+        .card-completed::after {
+            content: '✓ COMPLETED';
+            position: absolute;
+            top: 1rem;
+            right: -2rem;
+            background: var(--primary);
+            color: var(--bg-dark);
+            padding: 0.25rem 3rem;
+            font-size: 0.7rem;
+            font-weight: 800;
+            transform: rotate(45deg);
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            /* Mobile menu needed */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <a href="/" class="sidebar-logo"><span>⚡</span> VulnForge</a>
+            <div class="nav-section">
+                <div class="nav-title">Menu</div>
+                <a href="#" class="nav-item active">📊 Dashboard</a>
+                <a href="#" class="nav-item">🎯 Levels</a>
+                <a href="#" class="nav-item">🏆 Leaderboard</a>
+                <a href="#" class="nav-item">📚 Documentation</a>
+            </div>
+            <div class="nav-section">
+                <div class="nav-title">Community</div>
+                <a href="#" class="nav-item">💬 Discord</a>
+                <a href="https://github.com/webspoilt/vulnforge-academy" class="nav-item">⭐ Github</a>
+            </div>
+            <div class="nav-section" style="margin-top: auto;">
+                <a href="#" class="nav-item" onclick="logout()">🚪 Logout</a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="header">
+                <div>
+                    <h1 id="welcome-msg">Welcome back, Hacker</h1>
+                    <p style="color: var(--text-secondary);">Ready to break some code today?</p>
+                </div>
+                <div class="user-profile">
+                    <div style="text-align: right;">
+                        <div style="font-weight: 700;" id="user-name">Guest</div>
+                        <div style="font-size: 0.8rem; color: var(--primary);" id="user-rank">Skid</div>
+                    </div>
+                    <div class="avatar">H</div>
+                </div>
+            </header>
+
+            <!-- Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Points</div>
+                    <div class="stat-value">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Levels Hacked</div>
+                    <div class="stat-value">0/20</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Global Rank</div>
+                    <div class="stat-value">#1337</div>
+                </div>
+            </div>
+
+            <h2 style="margin-bottom: 1.5rem;">Active Challenges</h2>
+            <div class="levels-grid">
+                <!-- Levels will be loaded here -->
+                <div class="level-card">
+                    <div class="level-header">
+                        <span class="level-difficulty diff-easy">Easy</span>
+                        <span style="color: var(--text-secondary); font-family: monospace;">10 pts</span>
+                    </div>
+                    <div class="level-title">SQL Injection I</div>
+                    <p class="level-desc">Learn the basics of SQL injection by bypassing a simple login form. Classic '
+                        OR '1'='1 stuff.</p>
+                    <a href="/?level=sqli-1" class="btn">Deploy Instance</a>
+                </div>
+
+                <div class="level-card">
+                    <div class="level-header">
+                        <span class="level-difficulty diff-med">Medium</span>
+                        <span style="color: var(--text-secondary); font-family: monospace;">25 pts</span>
+                    </div>
+                    <div class="level-title">XSS Stored</div>
+                    <p class="level-desc">Inject malicious scripts into the database that execute when other users view
+                        the page.</p>
+                    <a href="/?level=xss-2" class="btn">Deploy Instance</a>
+                </div>
+
+                <div class="level-card">
+                    <div class="level-header">
+                        <span class="level-difficulty diff-hard">Hard</span>
+                        <span style="color: var(--text-secondary); font-family: monospace;">50 pts</span>
+                    </div>
+                    <div class="level-title">SSRF Cloud</div>
+                    <p class="level-desc">Trick the server into making requests to internal infrastructure and steal
+                        cloud metadata.</p>
+                    <a href="/?level=ssrf-3" class="btn">Deploy Instance</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Load User Data
+        const userStr = localStorage.getItem('vulnforge_user');
+        if (userStr) {
+            const user = JSON.parse(userStr);
+            document.getElementById('welcome-msg').textContent = `Welcome back, ${user.username}`;
+            document.getElementById('user-name').textContent = user.username;
+            document.getElementById('user-rank').textContent = user.rank || 'Novice';
+            document.querySelector('.avatar').textContent = user.username[0].toUpperCase();
+        } else {
+            // Redirect to login if not logged in
+            // window.location.href = '/login.html';
+        }
+
+        function logout() {
+            localStorage.removeItem('vulnforge_session');
+            window.location.href = '/login.html';
+        }
+    </script>
+</body>
+
+</html>
