@@ -504,7 +504,24 @@
             }
         }
 
-        // ... (omitted)
+        // Helper to add lines to terminal
+        function addLine(html) {
+            const terminal = document.getElementById('terminal');
+            const successBox = document.getElementById('success-box');
+            const hintBox = document.getElementById('hint-box');
+            const inputSection = document.getElementById('input-section');
+
+            const div = document.createElement('div');
+            div.className = 'terminal-line';
+            div.innerHTML = html;
+            div.style.animationDelay = '0s'; // Show immediately
+
+            // Insert before success box so it appears in flow
+            terminal.insertBefore(div, inputSection);
+
+            // Auto scroll
+            terminal.scrollTop = terminal.scrollHeight;
+        }
 
         function solveChallenge(serverCode) {
             document.getElementById('input-section').style.display = 'none';
